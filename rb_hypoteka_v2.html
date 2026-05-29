@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raiffeisen banka – Hypotekárna kalkulačka</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --rb-yellow:  #ffd400;
+  --rb-black:   #0b0b0b;
+  --rb-dark:    #1a1a1a;
+  --rb-gray:    #6b7280;
+  --rb-light:   #f4f5f7;
+  --rb-border:  #d1d5db;
+  --rb-white:   #ffffff;
+  --g-bg:#ecfdf5; --g-fg:#065f46; --g-bd:#6ee7b7;
+  --w-bg:#fffbeb; --w-fg:#78350f; --w-bd:#fcd34d;
+  --r-bg:#fff1f2; --r-fg:#881337; --r-bd:#fda4af;
+  --radius:14px;
+  --shadow:0 4px 20px rgba(0,0,0,.10);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.16);
+}
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; }
+body {
+  font-family:'Amalia','Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  font-size:15px;
+  background:linear-gradient(145deg,#f0f0f0 0%,#fafafa 100%);
+  color:var(--rb-dark);
+  min-height:100vh;
+  padding-bottom:40px;
+}
+.wrap { max-width:1260px; margin:0 auto; padding:22px 18px; }
+
+/* ── Header ── */
+header {
+  background:var(--rb-black); color:#fff;
+  padding:22px 28px; border-radius:var(--radius);
+  margin-bottom:22px; box-shadow:var(--shadow-lg);
+  display:flex; align-items:center; gap:20px;
+}
+.hdr-badge {
+  background:var(--rb-yellow); color:var(--rb-black);
+  font-weight:900; font-size:1.5rem;
+  width:54px; height:54px; border-radius:12px;
+  display:grid; place-items:center; flex-shrink:0;
+}
+header h1 { font-size:clamp(1.4rem,2.5vw,2rem); font-weight:400; letter-spacing:.5px; }
+.subtitle  { color:#d1d5db; font-size:1.15rem; font-weight:600; margin-top:5px; }
+.calc-date { margin-left:auto; font-size:.82rem; color:#9ca3af; white-space:nowrap; align-self:flex-start; padding-top:4px; }
+
+/* ── Layout ── */
+.main-grid { display:grid; grid-template-columns:1.3fr 1fr; gap:18px; align-items:start; }
+.input-stack { display:flex; flex-direction:column; gap:16px; }
+
+/* ── Card ── */
+.card { background:var(--rb-white); border:1px solid var(--rb-border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+.card-head { padding:12px 18px; font-weight:700; font-size:.88rem; letter-spacing:.4px; text-transform:uppercase; display:flex; align-items:center; gap:8px; }
+.card-head.input-head  { background:linear-gradient(90deg,var(--rb-yellow),#fff3a0); color:var(--rb-black); border-bottom:2px solid var(--rb-yellow); }
+.card-head.result-head { background:var(--rb-black); color:var(--rb-yellow); border-bottom:2px solid #333; }
+.card-head .icon { font-size:1.1rem; }
+.card-body { padding:18px; display:flex; flex-direction:column; gap:13px; }
+
+/* ── Fields ── */
+.field { display:flex; flex-direction:column; gap:5px; }
+.field label { font-weight:600; font-size:.84rem; color:#374151; }
+.help { font-size:.76rem; color:var(--rb-gray); }
+input[type=number], input[type=text], select {
+  width:100%; padding:9px 12px; border:1.5px solid var(--rb-border); border-radius:9px;
+  font-size:.93rem; font-family:inherit; background:#fff; color:var(--rb-dark);
+  transition:border-color .15s, box-shadow .15s;
+}
+input:focus, select:focus { outline:none; border-color:var(--rb-yellow); box-shadow:0 0 0 3px rgba(255,212,0,.25); }
+input[readonly] { background:#f9fafb; color:#374151; font-weight:700; cursor:default; }
+
+/* ── Slider ── */
+.slider-wrap { display:grid; grid-template-columns:1fr 130px; gap:10px; align-items:center; }
+input[type=range] {
+  width:100%; height:6px; -webkit-appearance:none; appearance:none; cursor:pointer; border-radius:9px;
+  background:linear-gradient(to right,var(--rb-yellow) 0%,var(--rb-yellow) var(--pct,50%),#e5e7eb var(--pct,50%),#e5e7eb 100%);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+  background:var(--rb-black); border:2px solid var(--rb-yellow); cursor:pointer; transition:transform .1s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
+input[type=range]::-moz-range-thumb {
+  width:18px; height:18px; border-radius:50%; background:var(--rb-black); border:2px solid var(--rb-yellow); cursor:pointer;
+}
+.badge-info {
+  display:inline-flex; align-items:center; gap:5px; background:#f3f4f6; border:1px solid #e5e7eb;
+  border-radius:7px; padding:5px 10px; font-size:.85rem; font-weight:600; color:#374151;
+}
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+/* ── Zľavy ── */
+.disc-group { display:flex; flex-direction:column; gap:7px; padding:12px 14px; background:#fffdf0; border:1.5px solid #ffd400; border-radius:10px; }
+.disc-group-title { font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:#78350f; margin-bottom:2px; }
+.disc-row { display:flex; align-items:center; gap:9px; cursor:pointer; }
+.disc-row input[type=checkbox] { width:17px; height:17px; flex-shrink:0; accent-color:var(--rb-black); cursor:pointer; }
+.disc-row label { font-size:.88rem; font-weight:600; color:var(--rb-dark); cursor:pointer; }
+.disc-badge { margin-left:auto; background:var(--rb-black); color:var(--rb-yellow); font-size:.72rem; font-weight:800; padding:2px 7px; border-radius:99px; white-space:nowrap; }
+
+/* ── Co-borrower ── */
+.cb-wrap { display:flex; align-items:center; gap:10px; padding:10px 12px; background:#f9fafb; border:1.5px solid var(--rb-border); border-radius:9px; }
+.cb-wrap label { font-weight:600; font-size:.88rem; cursor:pointer; color:var(--rb-dark); }
+input[type=checkbox] { width:18px; height:18px; flex-shrink:0; accent-color:var(--rb-black); cursor:pointer; }
+.co-block { display:none; flex-direction:column; gap:12px; padding:14px; border:2px dashed #9ca3af; border-radius:11px; background:#fafafa; }
+.co-block.show { display:flex; }
+.co-title { font-weight:700; font-size:.88rem; color:var(--rb-dark); padding-bottom:8px; border-bottom:1px solid #e5e7eb; }
+
+/* ── Buttons ── */
+.btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:2px; }
+button { padding:11px 22px; border:none; border-radius:9px; font-size:.9rem; font-weight:700; font-family:inherit; cursor:pointer; transition:transform .12s, box-shadow .12s; display:inline-flex; align-items:center; gap:7px; }
+.btn-primary   { background:var(--rb-yellow); color:var(--rb-black); box-shadow:0 4px 14px rgba(255,212,0,.45); flex:1; }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 7px 18px rgba(255,212,0,.5); }
+.btn-secondary { background:#fff; color:var(--rb-dark); border:1.5px solid var(--rb-border); }
+.btn-secondary:hover { background:#f3f4f6; }
+.btn-print { background:var(--rb-black); color:var(--rb-yellow); box-shadow:0 4px 14px rgba(0,0,0,.2); }
+.btn-print:hover { transform:translateY(-2px); box-shadow:0 7px 18px rgba(0,0,0,.3); }
+
+/* ══ STATUS + TOOLTIP ══ */
+.tip-wrap { display:flex; flex-direction:column; }
+.status-box {
+  padding:13px 16px; border-radius:11px; border:1.5px solid;
+  font-weight:800; font-size:.97rem;
+  display:flex; align-items:center; gap:9px;
+}
+.s-green  { background:var(--g-bg); color:var(--g-fg); border-color:var(--g-bd); }
+.s-yellow { background:var(--w-bg); color:var(--w-fg); border-color:var(--w-bd); }
+.s-red    { background:var(--r-bg); color:var(--r-fg); border-color:var(--r-bd); }
+.status-icon { font-size:1.3rem; }
+#statusText { flex:1; }
+
+.info-btn {
+  display:none;
+  width:24px; height:24px; border-radius:50%;
+  background:transparent; border:2px solid currentColor;
+  font-size:.78rem; font-weight:900; cursor:pointer; flex-shrink:0;
+  align-items:center; justify-content:center;
+  opacity:.75; padding:0; font-family:inherit;
+  transition:opacity .15s, transform .15s;
+}
+.info-btn:hover, .info-btn:focus { opacity:1; transform:scale(1.12); outline:none; }
+
+.tip-panel {
+  display:none;
+  background:#1c1c1c; color:#f1f1f1;
+  font-size:.82rem; line-height:1.6; font-weight:400;
+  padding:12px 16px;
+  border-radius:0 0 11px 11px;
+  border:1.5px solid #333; border-top:none;
+  border-left:3px solid var(--rb-yellow);
+}
+.tip-panel.show { display:block; }
+.tip-title { font-weight:700; color:var(--rb-yellow); margin-bottom:7px; font-size:.84rem; }
+.tip-panel ul { padding-left:18px; }
+.tip-panel li { margin-bottom:5px; }
+.tip-panel li:last-child { margin-bottom:0; }
+
+.reasons { display:none; flex-direction:column; gap:4px; padding:0 6px; font-size:.84rem; color:#374151; }
+.reason-item { display:flex; align-items:flex-start; gap:6px; }
+.reason-item::before { content:"⚠"; font-size:.8rem; margin-top:1px; flex-shrink:0; }
+
+/* ══ KLIENTSKÁ SEKCIA ══ */
+.client-metrics { display:flex; flex-direction:column; gap:10px; }
+.cm-hero {
+  background:var(--rb-black); color:var(--rb-yellow);
+  border-radius:12px; padding:18px 22px;
+  display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px;
+}
+.cm-hero-label { font-size:.77rem; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:.5px; }
+.cm-hero-value { font-size:2.2rem; font-weight:900; line-height:1.1; }
+.cm-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.cm-item {
+  background:#f8f9fb; border:1px solid var(--rb-border);
+  border-radius:10px; padding:11px 14px;
+  display:flex; flex-direction:column; gap:3px;
+}
+.cm-item-label { font-size:.73rem; font-weight:700; color:var(--rb-gray); text-transform:uppercase; letter-spacing:.35px; }
+.cm-item-value { font-size:.97rem; font-weight:800; color:var(--rb-dark); }
+
+/* ══ POBOČKOVÁ SEKCIA ══ */
+.branch-label {
+  display:flex; align-items:center; gap:10px;
+  font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+  color:var(--rb-gray); padding:10px 0 6px;
+}
+.branch-label::before, .branch-label::after { content:''; flex:1; height:1px; background:var(--rb-border); }
+.rtable { width:100%; border-collapse:collapse; }
+.rtable tr { transition:background .1s; }
+.rtable tr:hover td { background:#fafafa; }
+.rtable td { padding:7px 6px; font-size:.84rem; border-bottom:1px solid #f3f4f6; }
+.rtable .lc { color:#4b5563; font-weight:500; }
+.rtable .vc { text-align:right; font-weight:700; color:var(--rb-dark); }
+.rtable .section-row td { font-size:.73rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--rb-gray); padding-top:10px; padding-bottom:3px; border-bottom:2px solid var(--rb-yellow); }
+
+/* ══ MAXIMÁLNA PONUKA ══ */
+.max-scenarios { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.ms-panel { border-radius:12px; padding:16px 18px; border:1.5px solid; display:flex; flex-direction:column; }
+.ms-green  { background:#f0fdf4; border-color:#86efac; }
+.ms-yellow { background:#fffbeb; border-color:#fcd34d; }
+.ms-zone-label { font-size:.74rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; margin-bottom:2px; }
+.ms-green  .ms-zone-label { color:#065f46; }
+.ms-yellow .ms-zone-label { color:#92400e; }
+.ms-conditions { font-size:.75rem; color:var(--rb-gray); margin-bottom:10px; }
+.ms-loan-amount { font-size:1.7rem; font-weight:900; color:var(--rb-dark); line-height:1.1; }
+.ms-loan-label  { font-size:.73rem; color:var(--rb-gray); margin-top:2px; margin-bottom:10px; }
+.ms-divider { height:1px; background:rgba(0,0,0,.1); margin:8px 0; }
+.ms-row { display:flex; justify-content:space-between; align-items:baseline; font-size:.83rem; gap:8px; padding:4px 0; border-bottom:1px solid rgba(0,0,0,.05); }
+.ms-row:last-of-type { border-bottom:none; }
+.ms-row span   { color:#4b5563; }
+.ms-row strong { color:var(--rb-dark); font-weight:700; text-align:right; white-space:nowrap; }
+.ms-limit-note { margin-top:9px; font-size:.73rem; color:var(--rb-gray); font-style:italic; line-height:1.4; }
+
+.max-term-bar { display:flex; align-items:center; gap:10px; background:#f3f4f6; border:1px solid var(--rb-border); border-radius:9px; padding:10px 14px; }
+.max-term-bar span   { font-size:.84rem; color:#4b5563; font-weight:500; }
+.max-term-bar strong { font-weight:800; color:var(--rb-dark); margin-left:auto; }
+
+/* ── Dep cost info bar ── */
+.dep-info-bar {
+  display:none;
+  align-items:center; gap:8px;
+  background:#fef3c7; border:1px solid #fcd34d; border-radius:8px;
+  padding:8px 12px; font-size:.82rem; color:#78350f;
+}
+.dep-info-bar.visible { display:flex; }
+.dep-info-bar strong { font-weight:800; }
+
+.divider { height:1px; background:var(--rb-border); margin:4px 0; }
+.footnote { font-size:.76rem; color:var(--rb-gray); line-height:1.5; padding:10px 12px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb; }
+.footnote strong { color:var(--rb-dark); }
+.orientation-chip { display:inline-flex; align-items:center; gap:5px; font-size:.75rem; font-weight:700; background:rgba(255,212,0,.15); color:#78350f; padding:3px 9px; border-radius:99px; border:1px solid rgba(255,212,0,.4); }
+
+/* ── Responsive ── */
+@media(max-width:880px){
+  .main-grid     { grid-template-columns:1fr; }
+  .two-col       { grid-template-columns:1fr; }
+  .max-scenarios { grid-template-columns:1fr; }
+  .cm-grid       { grid-template-columns:1fr; }
+  header         { flex-wrap:wrap; }
+  .calc-date     { margin-left:0; width:100%; }
+}
+
+/* ── Print ── */
+@media print {
+  body { background:#fff !important; font-size:11pt; }
+  .input-stack, .btn-row, .btn-print, header, .branch-section { display:none !important; }
+  .wrap { padding:0; max-width:100%; }
+  .main-grid { grid-template-columns:1fr; gap:10px; }
+  .card { box-shadow:none !important; border:1px solid #ccc; break-inside:avoid; }
+  .card-head, .ms-panel, .max-term-bar, .cm-hero { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .print-header { display:block !important; }
+  .tip-wrap .tip-panel { display:none !important; }
+  .info-btn { display:none !important; }
+}
+.print-header { display:none; text-align:center; margin-bottom:14px; }
+.print-header h2 { font-size:1.3rem; }
+.print-header p { font-size:.85rem; color:#555; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="hdr-badge">RB</div>
+  <div>
+    <h1>Raiffeisen banka</h1>
+    <p class="subtitle">Hypotekárna kalkulačka</p>
+  </div>
+  <div class="calc-date" id="calcDate"></div>
+</header>
+
+<div class="main-grid">
+
+<!-- ══════ ĽAVÝ STĹPEC ══════ -->
+<div class="input-stack">
+
+  <div class="card">
+    <div class="card-head input-head"><span class="icon">🏠</span>Vstupné údaje</div>
+    <div class="card-body">
+      <div class="two-col">
+        <div class="field">
+          <label for="income">Čistý mes. príjem žiadateľa (EUR)</label>
+          <input type="number" id="income" min="0" step="50" placeholder="napr. 1 500">
+        </div>
+        <div class="field">
+          <label for="incomeType">Typ príjmu</label>
+          <select id="incomeType">
+            <option value="EMPLOYMENT">Zamestnanec</option>
+            <option value="BUSINESS">Podnikateľ</option>
+            <option value="PENSION">Dôchodca</option>
+            <option value="OTHER">Iné</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Požadovaná výška úveru (EUR)</label>
+        <div class="slider-wrap">
+          <input type="range"  id="loanSlider" min="13000" max="500000" step="1000" value="150000">
+          <input type="number" id="loanNum"    min="13000" max="500000" step="1000" value="150000">
+        </div>
+        <span class="help">Min 13 000 EUR · Max 500 000 EUR</span>
+      </div>
+
+      <div class="field">
+        <label>Doba splácania (roky)</label>
+        <div class="slider-wrap">
+          <input type="range"  id="termSlider" min="4" max="30" step="1" value="25">
+          <input type="number" id="termNum"    min="4" max="30" step="1" value="25">
+        </div>
+        <span class="badge-info" id="termDisplay">25 rokov · 300 mesiacov</span>
+      </div>
+
+      <div class="two-col">
+        <div class="field">
+          <label for="fixation">Doba fixácie úroku</label>
+          <select id="fixation">
+            <option value="1">1 rok</option>
+            <option value="2">2 roky</option>
+            <option value="3" selected>3 roky</option>
+            <option value="5">5 rokov</option>
+            <option value="7">7 rokov</option>
+            <option value="10">10 rokov</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="annualRate">Úroková sadzba (p.a.)</label>
+          <input type="text" id="annualRate" readonly>
+        </div>
+      </div>
+
+      <div class="disc-group">
+        <div class="disc-group-title">💛 Zľava na úrokovej sadzbe</div>
+        <div class="disc-row">
+          <input type="checkbox" id="disc1">
+          <label for="disc1">Benefit program (1 ďalší produkt v RB)</label>
+          <span class="disc-badge">−0,10 %</span>
+        </div>
+        <div class="disc-row">
+          <input type="checkbox" id="disc2">
+          <label for="disc2">Energetický certifikát – ESG (isEsgHtg)</label>
+          <span class="disc-badge">−0,10 %</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head input-head"><span class="icon">📋</span>Záväzky</div>
+    <div class="card-body">
+      <div class="two-col">
+        <div class="field">
+          <label for="existMo">Mesačné splátky exist. úverov (EUR)</label>
+          <input type="number" id="existMo" min="0" step="10" value="0">
+        </div>
+        <div class="field">
+          <label for="existBal">Zostatok exist. úverov (EUR)</label>
+          <input type="number" id="existBal" min="0" step="100" value="0">
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="field">
+          <label for="children">Počet vyživovaných osôb do 26 r. <span style="font-weight:400;color:var(--rb-gray)">(numberOfDependentsUnder26)</span></label>
+          <input type="number" id="children" min="0" max="10" step="1" value="0">
+        </div>
+        <div class="field">
+          <label style="color:var(--rb-gray);font-size:.78rem">Náklad/osoba: 230 EUR/mes.<br><em>(NBS životné minimum)</em></label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Odhadovaná hodnota nehnuteľnosti (EUR)</label>
+        <div class="slider-wrap">
+          <input type="range"  id="propSlider" min="10000" max="2000000" step="1000" value="200000">
+          <input type="number" id="propNum"    min="10000" max="2000000" step="1000" value="200000">
+        </div>
+        <span class="badge-info" id="ltvBadge">🏷 LTV: 75,0 %</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head input-head"><span class="icon">👤</span>Osobné údaje</div>
+    <div class="card-body">
+      <div class="two-col">
+        <div class="field">
+          <label for="birthMonth">Mesiac narodenia</label>
+          <select id="birthMonth"></select>
+        </div>
+        <div class="field">
+          <label for="birthYear">Rok narodenia</label>
+          <input type="number" id="birthYear" min="1930" max="2005" placeholder="napr. 1980">
+        </div>
+      </div>
+      <div class="field">
+        <label for="marital">Rodinný stav</label>
+        <select id="marital">
+          <option value="SINGLE">Slobodný/Slobodná</option>
+          <option value="MARRIED">Ženatý / Vydatá</option>
+          <option value="DIVORCED">Rozvedený/Rozvedená</option>
+          <option value="WIDOWED">Vdovec/Vdova</option>
+        </select>
+      </div>
+      <div class="cb-wrap">
+        <input type="checkbox" id="addCo">
+        <label for="addCo">Pridať spoludlžníka / manžela/manželku</label>
+      </div>
+
+      <div class="co-block" id="coBlock">
+        <div class="co-title">👥 Spoludlžník / Manžel / Manželka</div>
+        <div class="two-col">
+          <div class="field">
+            <label for="coIncome">Čistý mes. príjem (EUR)</label>
+            <input type="number" id="coIncome" min="0" step="50" placeholder="napr. 1 200">
+          </div>
+          <div class="field">
+            <label for="coIncomeType">Typ príjmu</label>
+            <select id="coIncomeType">
+              <option value="EMPLOYMENT">Zamestnanec</option>
+              <option value="BUSINESS">Podnikateľ</option>
+              <option value="PENSION">Dôchodca</option>
+              <option value="OTHER">Iné</option>
+            </select>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="coBirthMonth">Mesiac narodenia</label>
+            <select id="coBirthMonth"></select>
+          </div>
+          <div class="field">
+            <label for="coBirthYear">Rok narodenia</label>
+            <input type="number" id="coBirthYear" min="1930" max="2005" placeholder="napr. 1978">
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="field">
+            <label for="coExistMo">Mesačné splátky exist. úverov (EUR)</label>
+            <input type="number" id="coExistMo" min="0" step="10" value="0">
+          </div>
+          <div class="field">
+            <label for="coExistBal">Zostatok exist. úverov (EUR)</label>
+            <input type="number" id="coExistBal" min="0" step="100" value="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary"   id="btnCalc">⚡ Vypočítať</button>
+        <button class="btn-secondary" id="btnReset">↺ Vymazať</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /input-stack -->
+
+<!-- ══════ PRAVÝ STĹPEC ══════ -->
+<div style="display:flex;flex-direction:column;gap:16px;">
+
+  <div class="print-header">
+    <h2>Raiffeisen banka — Orientačná hypotekárna ponuka</h2>
+    <p id="printDate"></p>
+  </div>
+
+  <!-- Výsledok ponuky -->
+  <div class="card" id="resultCard">
+    <div class="card-head result-head"><span class="icon">📊</span>Výsledok ponuky</div>
+    <div class="card-body">
+
+      <div class="tip-wrap" id="tipWrap">
+        <div class="status-box s-yellow" id="statusBox">
+          <span class="status-icon">⏳</span>
+          <span id="statusText">Zadajte vstupné údaje a stlačte Vypočítať</span>
+          <button class="info-btn" id="infoBtn" type="button"
+                  title="Zobraziť odporúčania pre schválenie"
+                  aria-label="Odporúčania pre schválenie">i</button>
+        </div>
+        <div class="tip-panel" id="tipPanel"></div>
+      </div>
+
+      <div class="reasons" id="reasons"></div>
+
+      <!-- Klientská sekcia -->
+      <div class="client-metrics">
+        <div class="cm-hero">
+          <div class="cm-hero-label">Mesačná anuitná splátka</div>
+          <div class="cm-hero-value" id="rPay">—</div>
+        </div>
+        <div class="cm-grid">
+          <div class="cm-item">
+            <div class="cm-item-label">Celková zaplatená suma</div>
+            <div class="cm-item-value" id="rTotal">—</div>
+          </div>
+          <div class="cm-item">
+            <div class="cm-item-label">Z toho úroky</div>
+            <div class="cm-item-value" id="rInterest">—</div>
+          </div>
+          <div class="cm-item">
+            <div class="cm-item-label">Sadzba · fixácia</div>
+            <div class="cm-item-value" id="rRateFixation">—</div>
+          </div>
+          <div class="cm-item">
+            <div class="cm-item-label">Doba splácania</div>
+            <div class="cm-item-value" id="rTermResult">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pobočková sekcia – netlačí sa -->
+      <div class="branch-section">
+        <div class="branch-label">Informácie pre pobočku</div>
+        <table class="rtable">
+          <tr class="section-row"><td colspan="2">Rizikové ukazovatele</td></tr>
+          <tr><td class="lc">LTV (úver / hodnota nehn.)</td><td class="vc" id="rLTV">—</td></tr>
+          <tr><td class="lc">DTI (splátky + náklady detí / príjem)</td><td class="vc" id="rDTI">—</td></tr>
+          <tr><td class="lc">Čistý disponibilný príjem</td><td class="vc" id="rDisposable">—</td></tr>
+          <tr class="section-row"><td colspan="2">Vek</td></tr>
+          <tr><td class="lc">Žiadateľ — vek dnes / na konci</td>    <td class="vc" id="rAppAge">—</td></tr>
+          <tr><td class="lc">Spoludlžník — vek dnes / na konci</td> <td class="vc" id="rCoAge">—</td></tr>
+          <tr class="section-row"><td colspan="2">Existujúce záväzky (kombinované)</td></tr>
+          <tr><td class="lc">Mesačné splátky exist. úverov</td><td class="vc" id="rExMo">—</td></tr>
+          <tr><td class="lc">Náklady vyživ. osôb (×230 EUR)</td><td class="vc" id="rDepCost">—</td></tr>
+          <tr><td class="lc">Zostatky exist. úverov</td>        <td class="vc" id="rExBal">—</td></tr>
+        </table>
+      </div>
+
+      <div class="footnote">
+        <strong>Upozornenie:</strong> Toto je orientačný výpočet. Presné podmienky a výšku
+        úveru vie zodpovedne posúdiť banka po overení príjmu prostredníctvom
+        <strong>Sociálnej poisťovne</strong>.
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Maximálna orientačná ponuka -->
+  <div class="card" id="maxCard">
+    <div class="card-head" style="background:linear-gradient(90deg,var(--rb-black),#2d2d2d);color:var(--rb-yellow);border-bottom:2px solid var(--rb-yellow);">
+      <span class="icon">🏆</span>Maximálna orientačná ponuka
+    </div>
+    <div class="card-body">
+
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span class="orientation-chip">⚠ Orientačná hodnota</span>
+        <span style="font-size:.82rem;color:var(--rb-gray);" id="maxSubtitle">Vyplňte údaje a vypočítajte</span>
+      </div>
+
+      <!-- Info bar pre deti -->
+      <div class="dep-info-bar" id="depInfoBar">
+        👶 <span id="depInfoText"></span>
+      </div>
+
+      <div class="max-scenarios">
+        <div class="ms-panel ms-green">
+          <div class="ms-zone-label">🟢 Zelená zóna</div>
+          <div class="ms-conditions">DTI &lt; 40 % · LTV &lt; 80 %</div>
+          <div class="ms-loan-amount" id="msGreenLoan">—</div>
+          <div class="ms-loan-label">Maximálna výška úveru</div>
+          <div class="ms-divider"></div>
+          <div class="ms-row"><span>Mesačná anuitná splátka</span><strong id="msGreenPay">—</strong></div>
+          <div class="ms-row"><span>Celková zaplatená suma</span><strong id="msGreenTotal">—</strong></div>
+          <div class="ms-row"><span>Z toho úroky</span><strong id="msGreenInterest">—</strong></div>
+          <div class="ms-row"><span>Úroková sadzba (p.a.)</span><strong id="msGreenRate">—</strong></div>
+          <div class="ms-limit-note" id="msGreenNote"></div>
+        </div>
+        <div class="ms-panel ms-yellow">
+          <div class="ms-zone-label">🟡 Podmienečná zóna</div>
+          <div class="ms-conditions">DTI &lt; 50 % · LTV &lt; 90 %</div>
+          <div class="ms-loan-amount" id="msYellowLoan">—</div>
+          <div class="ms-loan-label">Maximálna výška úveru</div>
+          <div class="ms-divider"></div>
+          <div class="ms-row"><span>Mesačná anuitná splátka</span><strong id="msYellowPay">—</strong></div>
+          <div class="ms-row"><span>Celková zaplatená suma</span><strong id="msYellowTotal">—</strong></div>
+          <div class="ms-row"><span>Z toho úroky</span><strong id="msYellowInterest">—</strong></div>
+          <div class="ms-row"><span>Úroková sadzba (p.a.)</span><strong id="msYellowRate">—</strong></div>
+          <div class="ms-limit-note" id="msYellowNote"></div>
+        </div>
+      </div>
+
+      <div class="max-term-bar">
+        <span>Max. doba splácania (obmedzená vekom žiadateľa)</span>
+        <strong id="msMaxTerm">—</strong>
+      </div>
+
+      <div class="footnote">
+        <strong>Maximálna výška úveru</strong> spĺňa <strong>súčasne podmienky DTI aj LTV</strong>
+        (prísne menšie ako hraničné hodnoty). DTI sa počíta z kombinovaného príjmu
+        po odpočítaní nákladov na vyživované osoby (<strong>230 EUR/osoba/mes.</strong>).
+        Skutočnú výšku stanovuje banka po overení príjmu cez
+        <strong>Sociálnu poisťovňu</strong> a posúdení záložnej nehnuteľnosti.
+      </div>
+
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn-print" id="btnPrint">🖨 Vytlačiť výsledok</button>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /pravý stĺpec -->
+</div><!-- /main-grid -->
+</div><!-- /wrap -->
+
+<script>
+/* ════════════════════════════════════════════════════
+   RAIFFEISEN HYPO KALKULAČKA  v2
+   Výpočtová logika zodpovedá SmartHypo API schéme:
+   - numberOfDependentsUnder26 → náklad 230 EUR/osoba/mes.
+   - Disponibilný príjem = kombIncome − kombExMo − depCost
+   - Max ponuka: Math.floor(min(maxByDTI, maxByLTV, 500 000))
+   - Prísne nerovnosti: DTI < limit, LTV < limit
+════════════════════════════════════════════════════ */
+
+// ── Sadzby bez zľavy (platný cenník) ──
+var BASE_RATES = { '1':4.29, '2':3.89, '3':3.69, '5':4.09, '7':4.69, '10':4.89 };
+
+// Náklad na vyživovanú osobu do 26 r. (NBS životné minimum – NBS štandard používaný bankami)
+var DEP_COST_PER_PERSON = 230; // EUR/mes.
+
+var MONTHS_SK = [
+  'Január','Február','Marec','Apríl','Máj','Jún',
+  'Júl','August','September','Október','November','December'
+];
+
+var TODAY = (function() {
+  var d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+})();
+
+var fmtEUR = new Intl.NumberFormat('sk-SK', {
+  style:'currency', currency:'EUR', maximumFractionDigits:0
+});
+var fmtEUR2 = new Intl.NumberFormat('sk-SK', {
+  style:'currency', currency:'EUR', minimumFractionDigits:2, maximumFractionDigits:2
+});
+
+function fmtPct(v, dec) {
+  if (v === null || v === undefined || !isFinite(v)) return '—';
+  dec = (dec === undefined) ? 1 : dec;
+  return Number(v).toFixed(dec).replace('.', ',') + '\u00a0%';
+}
+
+function g(id)          { return document.getElementById(id); }
+function setText(id, v) { var el = g(id); if (el) el.textContent = v; }
+
+function skYears(n) {
+  if (n === 1) return '1\u00a0rok';
+  if (n >= 2 && n <= 4) return n + '\u00a0roky';
+  return n + '\u00a0rokov';
+}
+
+function fillMonths(selectId) {
+  var sel = g(selectId);
+  sel.innerHTML = '';
+  for (var i = 0; i < 12; i++) {
+    var opt = document.createElement('option');
+    opt.value = String(i + 1);
+    opt.textContent = (i + 1) + '\u00a0– ' + MONTHS_SK[i];
+    sel.appendChild(opt);
+  }
+  sel.selectedIndex = 0;
+}
+
+function getEffectiveRate() {
+  var base = BASE_RATES[g('fixation').value] || 0;
+  var disc = 0;
+  if (g('disc1').checked) disc += 0.10;
+  if (g('disc2').checked) disc += 0.10;
+  return Math.max(0, base - disc);
+}
+
+function updateRate() {
+  var rate = getEffectiveRate();
+  g('annualRate').value = rate.toFixed(2).replace('.', ',') + '\u00a0%';
+}
+
+function updateTermDisplay() {
+  var y = parseInt(g('termNum').value, 10);
+  if (isNaN(y) || y < 4) y = 4;
+  if (y > 30)             y = 30;
+  g('termDisplay').textContent = y + ' rokov\u00a0·\u00a0' + (y * 12) + ' mesiacov';
+}
+
+function updateLTVBadge() {
+  var loan = parseFloat(g('loanNum').value) || 0;
+  var prop = parseFloat(g('propNum').value) || 0;
+  g('ltvBadge').textContent = '\uD83C\uDFF7 LTV: ' + fmtPct(prop > 0 ? loan / prop * 100 : NaN);
+}
+
+function updateSliderGradient(slider) {
+  var min = parseFloat(slider.min) || 0;
+  var max = parseFloat(slider.max) || 100;
+  var val = parseFloat(slider.value) || 0;
+  slider.style.setProperty('--pct', (((val - min) / (max - min)) * 100).toFixed(1) + '%');
+}
+
+function updateCoBorrower() {
+  var married = g('marital').value === 'MARRIED';
+  var cb = g('addCo');
+  if (married) { cb.checked = true;  cb.disabled = true;  }
+  else          { cb.checked = false; cb.disabled = false; }
+  if (cb.checked) g('coBlock').classList.add('show');
+  else            g('coBlock').classList.remove('show');
+}
+
+function calcAge(monthVal, yearVal) {
+  var m = parseInt(monthVal, 10);
+  var y = parseInt(yearVal,  10);
+  if (isNaN(m) || isNaN(y) || m < 1 || m > 12 || y < 1900) return NaN;
+  var age = TODAY.getFullYear() - y;
+  if ((TODAY.getMonth() + 1) < m) age--;
+  return age >= 0 ? age : NaN;
+}
+
+// PMT = L · r·(1+r)^n / ((1+r)^n − 1)
+function calcAnnuity(principal, annualRatePct, termYears) {
+  var n = termYears * 12;
+  if (n <= 0 || principal <= 0) return NaN;
+  var r = annualRatePct / 100 / 12;
+  if (r === 0) return principal / n;
+  var factor = Math.pow(1 + r, n);
+  return principal * (r * factor) / (factor - 1);
+}
+
+// Inverzná funkcia: z max. splátky → max. istina
+// maxPrin = maxPmt · ((1+r)^n − 1) / (r · (1+r)^n)
+function maxPrincipal(annualRatePct, termYears, maxPmt) {
+  if (maxPmt <= 0) return 0;
+  var n = termYears * 12;
+  if (n <= 0) return 0;
+  var r = annualRatePct / 100 / 12;
+  if (r === 0) return maxPmt * n;
+  var factor = Math.pow(1 + r, n);
+  return maxPmt * (factor - 1) / (r * factor);
+}
+
+function updateTipPanel(statusType, advice) {
+  var btn   = g('infoBtn');
+  var panel = g('tipPanel');
+  if (statusType === 'green' || !advice || advice.length === 0) {
+    btn.style.display = 'none';
+    panel.classList.remove('has-tips', 'show');
+    panel.innerHTML = '';
+    return;
+  }
+  var html = '<div class="tip-title">💡 Čo odporúčame pre dosiahnutie zelenej zóny:</div><ul>';
+  advice.forEach(function(item) { html += '<li>' + item + '</li>'; });
+  html += '</ul>';
+  panel.innerHTML = html;
+  panel.classList.add('has-tips');
+  btn.style.display = 'inline-flex';
+}
+
+function showStatus(type, text, reasons, advice) {
+  var icons = { green:'✅', yellow:'⚠️', red:'❌' };
+  var box   = g('statusBox');
+  box.className = 'status-box s-' + type;
+  g('statusText').textContent = text;
+  box.querySelector('.status-icon').textContent = icons[type] || '❓';
+  var list = g('reasons');
+  list.innerHTML = '';
+  if (reasons && reasons.length > 0) {
+    reasons.forEach(function(r) {
+      var div = document.createElement('div');
+      div.className = 'reason-item';
+      div.textContent = r;
+      list.appendChild(div);
+    });
+    list.style.display = 'flex';
+  } else {
+    list.style.display = 'none';
+  }
+  updateTipPanel(type, advice || []);
+}
+
+// Prísne podmienky: < (nie ≤)
+// dti → vrátane nákladov na deti (adjustedDTI)
+function evaluate(appAgeEnd, adjustedDti, ltv, maxAgeEnd) {
+  if (isFinite(appAgeEnd) && appAgeEnd > 64) {
+    showStatus('red', 'Orientačne málo pravdepodobné', [
+      'Vek žiadateľa na konci splácania presahuje 64 rokov (' + appAgeEnd + '\u00a0r.).'
+    ], [
+      'Vek žiadateľa by bol ' + appAgeEnd + '\u00a0r. na konci splácania — skráťte dobu splácania alebo požiadajte o hypotéku skôr.'
+    ]);
+    return;
+  }
+  var missing = [];
+  if (!isFinite(adjustedDti)) missing.push('Chýba príjem – DTI sa nedá určiť.');
+  if (!isFinite(ltv))         missing.push('Chýba hodnota nehn. – LTV sa nedá určiť.');
+  if (!isFinite(appAgeEnd))   missing.push('Chýba rok narodenia žiadateľa.');
+  if (missing.length > 0) { showStatus('yellow', 'Nedostatočné údaje', missing, []); return; }
+
+  if (adjustedDti < 40 && maxAgeEnd <= 75 && ltv < 80) {
+    showStatus('green', 'Orientačne schválené ✓', [], []);
+    return;
+  }
+  if (adjustedDti < 50 && maxAgeEnd <= 80 && ltv < 90) {
+    var why = [], advice = [];
+    if (adjustedDti >= 40) {
+      why.push('DTI je 40\u00a0% alebo viac (' + fmtPct(adjustedDti,1) + ').');
+      advice.push('DTI ' + fmtPct(adjustedDti,1) + ': znížte existujúce mesačné záväzky alebo pridajte spoludlžníka s príjmom, aby DTI kleslo pod 40\u00a0%.');
+    }
+    if (ltv >= 80) {
+      why.push('LTV je 80\u00a0% alebo viac (' + fmtPct(ltv,1) + ').');
+      advice.push('LTV ' + fmtPct(ltv,1) + ': zvýšte vlastný vklad tak, aby LTV kleslo pod 80\u00a0% (max. dlh = 80\u00a0% hodnoty nehnuteľnosti).');
+    }
+    if (maxAgeEnd > 75) {
+      why.push('Vek na konci splácania je medzi 75 a 80 rokmi (' + maxAgeEnd + '\u00a0r.).');
+      advice.push('Vek ' + maxAgeEnd + '\u00a0r. na konci splácania: skráťte dobu splácania tak, aby vek na konci neprekročil 75 rokov.');
+    }
+    showStatus('yellow', 'Orientačne možno schváliť (podmienečne)', why, advice);
+    return;
+  }
+  var why = [], advice = [];
+  if (adjustedDti >= 50) {
+    why.push('DTI je 50\u00a0% alebo viac (' + fmtPct(adjustedDti,1) + ').');
+    advice.push('DTI ' + fmtPct(adjustedDti,1) + ': splaťte existujúce záväzky, znížte požadovaný úver alebo pridajte spoludlžníka s výrazne vyšším príjmom, aby DTI kleslo pod 40\u00a0%.');
+  }
+  if (ltv >= 90) {
+    why.push('LTV je 90\u00a0% alebo viac (' + fmtPct(ltv,1) + ').');
+    advice.push('LTV ' + fmtPct(ltv,1) + ': výrazne zvýšte vlastný vklad alebo znížte požadovanú výšku úveru — pre zelenú zónu musí LTV klesnúť pod 80\u00a0%.');
+  }
+  if (maxAgeEnd > 80) {
+    why.push('Vek na konci splácania presahuje 80 rokov (' + maxAgeEnd + '\u00a0r.).');
+    advice.push('Vek ' + maxAgeEnd + '\u00a0r. na konci splácania výrazne prekračuje limit — výrazne skráťte dobu splácania alebo požiadajte o hypotéku skôr.');
+  }
+  showStatus('red', 'Orientačne málo pravdepodobné', why, advice);
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════
+ *  VÝPOČET MAXIMÁLNEJ PONUKY  (jadro logiky)
+ *
+ *  Vstup:
+ *    combIncome   … kombinovaný čistý mes. príjem (žiadateľ + spoludlžník)
+ *    combExMo     … kombinované existujúce mes. splátky
+ *    depCost      … mes. náklady na vyživované osoby (počet × 230 EUR)
+ *    ratePct      … efektívna ročná sadzba (%)
+ *    termYears    … doba splácania (roky)
+ *    propVal      … hodnota nehnuteľnosti (EUR)
+ *
+ *  Pre každú zónu (DTI limit, LTV limit):
+ *
+ *    disponibilnyPrijem = combIncome − combExMo − depCost
+ *
+ *    maxSplátka_DTI = combIncome × dtiLimit − combExMo − depCost
+ *      → maximálna nová mesačná splátka tak, aby bolo
+ *        (combExMo + depCost + newPmt) / combIncome < dtiLimit
+ *
+ *    maxÚver_DTI  = inverzná anuita (maxSplátka_DTI, sadzba, roky)
+ *    maxÚver_LTV  = propVal × ltvLimit / 100
+ *
+ *    maxÚver = Math.floor(min(maxÚver_DTI, maxÚver_LTV, 500 000))
+ *
+ *  Math.floor zabezpečuje prísnu nerovnosť (<, nie ≤).
+ * ═══════════════════════════════════════════════════════════════════
+ */
+function updateMaxCard(combIncome, combExMo, depCost, ratePct, termYears, appAge, propVal) {
+
+  function computeScenario(dtiLimit, ltvLimit) {
+    if (!isFinite(combIncome) || combIncome <= 0) return null;
+
+    // Maximálna nová splátka = (príjem × DTI_limit) − existujúce splátky − náklady detí
+    var maxPmt = combIncome * (dtiLimit / 100) - combExMo - depCost;
+    if (maxPmt <= 0) return null;
+
+    var maxLoanDTI = maxPrincipal(ratePct, termYears, maxPmt);
+    var maxLoanLTV = (propVal > 0) ? propVal * (ltvLimit / 100) : Infinity;
+
+    var maxLoanExact = Math.min(maxLoanDTI, maxLoanLTV, 500000);
+    if (maxLoanExact < 13000) return null;
+
+    // Math.floor → prísna nerovnosť (< nie ≤)
+    var maxLoan = Math.floor(maxLoanExact);
+
+    var limitedBy;
+    if (!isFinite(maxLoanLTV)) {
+      limitedBy = 'DTI (hodnota nehnuteľnosti nezadaná)';
+    } else if (maxLoan >= 500000) {
+      limitedBy = 'Strop 500 000 EUR';
+    } else if (maxLoanDTI <= maxLoanLTV) {
+      limitedBy = 'DTI – príjem / záväzky';
+    } else {
+      limitedBy = 'LTV – hodnota nehnuteľnosti';
+    }
+
+    var n       = termYears * 12;
+    var payment = calcAnnuity(maxLoan, ratePct, termYears);
+    var total   = payment * n;
+    return {
+      loan: maxLoan,
+      payment: payment,
+      total: total,
+      interest: total - maxLoan,
+      limitedBy: limitedBy,
+      maxPmt: maxPmt
+    };
+  }
+
+  var rateStr = ratePct.toFixed(2).replace('.', ',') + '\u00a0%\u00a0p.a.';
+  var n = termYears * 12;
+
+  function fillPanel(prefix, scenario) {
+    setText(prefix + 'Rate', rateStr);
+    if (!scenario) {
+      setText(prefix + 'Loan',     'Nestanoviteľné');
+      setText(prefix + 'Pay',      '—');
+      setText(prefix + 'Total',    '—');
+      setText(prefix + 'Interest', '—');
+      setText(prefix + 'Note',     'Príjem a/alebo hodnota nehn. nestačia na splnenie podmienok.');
+      return;
+    }
+    setText(prefix + 'Loan',     fmtEUR.format(scenario.loan));
+    setText(prefix + 'Pay',      fmtEUR2.format(scenario.payment));
+    setText(prefix + 'Total',    fmtEUR.format(Math.round(scenario.total)));
+    setText(prefix + 'Interest', fmtEUR.format(Math.round(scenario.interest)));
+    setText(prefix + 'Note',     'Obmedzujúca podmienka: ' + scenario.limitedBy);
+  }
+
+  fillPanel('msGreen',  computeScenario(40, 80));
+  fillPanel('msYellow', computeScenario(50, 90));
+
+  // Max. doba splácania podľa veku: žiadateľ nesmie mať viac ako 64 r. na konci
+  var maxTermByAge = isFinite(appAge) ? Math.min(30, Math.max(0, 64 - appAge)) : 30;
+  setText('msMaxTerm', maxTermByAge > 0 ? skYears(maxTermByAge) : 'Limit veku dosiahnutý');
+
+  setText('maxSubtitle',
+    (isFinite(combIncome) && combIncome > 0)
+      ? 'Na základe kombinovaného príjmu, záväzkov, detí, hodnoty nehn. a efektívnej sadzby'
+      : 'Vyplňte údaje a vypočítajte'
+  );
+
+  // Dep info bar
+  var depBar = g('depInfoBar');
+  if (depCost > 0) {
+    depBar.classList.add('visible');
+    setText('depInfoText',
+      'Zohľadnené náklady na vyživované osoby: ' + fmtEUR.format(depCost) + '/mes. '
+      + '— znižujú disponibilný príjem zo ' + fmtEUR.format(combIncome)
+      + ' na ' + fmtEUR.format(Math.max(0, combIncome - combExMo - depCost)) + '/mes.'
+    );
+  } else {
+    depBar.classList.remove('visible');
+  }
+}
+
+function clearResults() {
+  ['rPay','rTotal','rInterest','rRateFixation','rTermResult'].forEach(function(id){ setText(id,'—'); });
+  ['rLTV','rDTI','rDisposable','rAppAge','rCoAge','rExMo','rDepCost','rExBal'].forEach(function(id){ setText(id,'—'); });
+  showStatus('yellow', 'Zadajte vstupné údaje a stlačte Vypočítať', [], []);
+  ['msGreenLoan','msGreenPay','msGreenTotal','msGreenInterest','msGreenRate',
+   'msYellowLoan','msYellowPay','msYellowTotal','msYellowInterest','msYellowRate',
+   'msMaxTerm'].forEach(function(id){ setText(id,'—'); });
+  setText('msGreenNote', '');
+  setText('msYellowNote', '');
+  setText('maxSubtitle', 'Vyplňte údaje a vypočítajte');
+  g('depInfoBar').classList.remove('visible');
+}
+
+function calculate() {
+  var income   = parseFloat(g('income').value);
+  var loan     = parseFloat(g('loanNum').value);
+  var years    = parseInt(g('termNum').value, 10);
+  var ratePct  = getEffectiveRate();
+  var prop     = parseFloat(g('propNum').value);
+  var existMo  = parseFloat(g('existMo').value)  || 0;
+  var existBal = parseFloat(g('existBal').value) || 0;
+  var children = parseInt(g('children').value, 10) || 0;
+  var bMonth   = g('birthMonth').value;
+  var bYear    = g('birthYear').value;
+  var coOn     = g('coBlock').classList.contains('show');
+
+  var errs = [];
+  if (!(income > 0))                       errs.push('Čistý mesačný príjem žiadateľa');
+  if (!(loan >= 13000 && loan <= 500000))  errs.push('Výška úveru (13 000 – 500 000 EUR)');
+  if (!(years >= 4 && years <= 30))        errs.push('Doba splácania (4 – 30 rokov)');
+  if (!(prop > 0))                         errs.push('Hodnota nehnuteľnosti');
+  if (!bYear)                              errs.push('Rok narodenia žiadateľa');
+  if (coOn) {
+    if (!(parseFloat(g('coIncome').value) > 0)) errs.push('Príjem spoludlžníka');
+    if (!g('coBirthYear').value)                errs.push('Rok narodenia spoludlžníka');
+  }
+  if (errs.length > 0) {
+    alert('Prosím vyplňte povinné polia:\n\u2022 ' + errs.join('\n\u2022 '));
+    return;
+  }
+
+  var payment       = calcAnnuity(loan, ratePct, years);
+  var nPayments     = years * 12;
+  var totalPaid     = payment * nPayments;
+  var totalInterest = totalPaid - loan;
+  var ltv           = prop > 0 ? (loan / prop * 100) : NaN;
+
+  var coIncomeV  = coOn ? (parseFloat(g('coIncome').value)   || 0) : 0;
+  var coExMo     = coOn ? (parseFloat(g('coExistMo').value)  || 0) : 0;
+  var coExBal    = coOn ? (parseFloat(g('coExistBal').value) || 0) : 0;
+
+  var combIncome = income + coIncomeV;
+  var combExMo   = existMo + coExMo;
+  var combExBal  = existBal + coExBal;
+
+  // Náklady na vyživované osoby (numberOfDependentsUnder26 × 230 EUR)
+  var depCost    = Math.max(0, children) * DEP_COST_PER_PERSON;
+
+  // Disponibilný príjem po odpočítaní záväzkov aj detí
+  var disposable = combIncome - combExMo - depCost;
+
+  // DTI = (všetky splátky vrátane novej + náklady detí) / kombIncome
+  // Ekvivalentne: (combExMo + depCost + payment) / combIncome
+  var adjustedDti = combIncome > 0
+    ? ((combExMo + depCost + payment) / combIncome * 100)
+    : NaN;
+
+  var appAge    = calcAge(bMonth, bYear);
+  var appAgeEnd = isFinite(appAge) ? appAge + years : NaN;
+  var coAge = NaN, coAgeEnd = NaN;
+  if (coOn) {
+    coAge    = calcAge(g('coBirthMonth').value, g('coBirthYear').value);
+    coAgeEnd = isFinite(coAge) ? coAge + years : NaN;
+  }
+  var maxAgeEnd = (coOn && isFinite(coAgeEnd)) ? Math.max(appAgeEnd, coAgeEnd) : appAgeEnd;
+
+  var fixSel   = g('fixation');
+  var fixLabel = fixSel.options[fixSel.selectedIndex].textContent;
+
+  // ── Klientská sekcia ──
+  setText('rPay',          fmtEUR2.format(payment));
+  setText('rTotal',        fmtEUR.format(Math.round(totalPaid)));
+  setText('rInterest',     fmtEUR.format(Math.round(totalInterest)));
+  setText('rRateFixation', ratePct.toFixed(2).replace('.',',') + '\u00a0%\u00a0p.a. · ' + fixLabel);
+  setText('rTermResult',   skYears(years));
+
+  // ── Pobočková sekcia ──
+  setText('rLTV',         fmtPct(ltv, 1));
+  setText('rDTI',         fmtPct(adjustedDti, 2));
+  setText('rDisposable',  fmtEUR.format(Math.max(0, disposable)) + '/mes.');
+  setText('rAppAge',      isFinite(appAge) ? appAge + '\u00a0/\u00a0' + appAgeEnd + '\u00a0r.' : '—');
+  setText('rCoAge',       coOn ? (isFinite(coAge) ? coAge + '\u00a0/\u00a0' + coAgeEnd + '\u00a0r.' : '—') : 'Nepoužitý');
+  setText('rExMo',        fmtEUR.format(Math.round(combExMo)));
+  setText('rDepCost',     depCost > 0 ? fmtEUR.format(depCost) + '/mes. (' + children + '\u00a0×\u00a0230\u00a0EUR)' : '0 EUR');
+  setText('rExBal',       fmtEUR.format(Math.round(combExBal)));
+
+  evaluate(appAgeEnd, adjustedDti, ltv, maxAgeEnd);
+  updateMaxCard(combIncome, combExMo, depCost, ratePct, years, appAge, prop);
+
+  if (window.innerWidth <= 880) g('resultCard').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function resetForm() {
+  g('income').value = '';
+  g('incomeType').selectedIndex = 0;
+  g('loanSlider').value = '150000'; g('loanNum').value = '150000';
+  g('termSlider').value = '25';     g('termNum').value = '25';
+  g('fixation').value = '3';
+  g('disc1').checked = false; g('disc2').checked = false;
+  g('existMo').value = '0'; g('existBal').value = '0'; g('children').value = '0';
+  g('propSlider').value = '200000'; g('propNum').value = '200000';
+  g('birthMonth').selectedIndex = 0; g('birthYear').value = '';
+  g('marital').selectedIndex = 0;
+  g('addCo').checked = false; g('addCo').disabled = false;
+  g('coBlock').classList.remove('show');
+  g('coIncome').value = '';
+  g('coIncomeType').selectedIndex = 0; g('coBirthMonth').selectedIndex = 0;
+  g('coBirthYear').value = ''; g('coExistMo').value = '0'; g('coExistBal').value = '0';
+  ['loanSlider','termSlider','propSlider'].forEach(function(id){ updateSliderGradient(g(id)); });
+  updateRate(); updateTermDisplay(); updateLTVBadge(); clearResults();
+}
+
+function printReport() {
+  var pd = g('printDate');
+  if (pd) pd.textContent = 'Orientačný výpočet zo dňa: '
+    + TODAY.toLocaleDateString('sk-SK', { day:'2-digit', month:'2-digit', year:'numeric' });
+  window.print();
+}
+
+function bindSlider(sliderId, numId, min, max, onUpdate) {
+  var slider = g(sliderId), num = g(numId);
+  slider.addEventListener('input', function() {
+    num.value = this.value; updateSliderGradient(this); if (onUpdate) onUpdate();
+  });
+  num.addEventListener('input', function() {
+    var v = parseFloat(this.value);
+    if (isFinite(v)) { slider.value = Math.max(min, Math.min(max, v)); updateSliderGradient(slider); }
+    if (onUpdate) onUpdate();
+  });
+  num.addEventListener('change', function() {
+    var v = parseFloat(this.value);
+    if (!isFinite(v) || v < min) this.value = min; else if (v > max) this.value = max;
+    slider.value = this.value; updateSliderGradient(slider); if (onUpdate) onUpdate();
+  });
+}
+
+function init() {
+  fillMonths('birthMonth');
+  fillMonths('coBirthMonth');
+
+  g('calcDate').textContent = 'Dátum: '
+    + new Intl.DateTimeFormat('sk-SK', { day:'2-digit', month:'2-digit', year:'numeric' }).format(TODAY);
+
+  updateRate(); updateTermDisplay(); updateLTVBadge();
+  ['loanSlider','termSlider','propSlider'].forEach(function(id){ updateSliderGradient(g(id)); });
+
+  bindSlider('loanSlider', 'loanNum', 13000,   500000, updateLTVBadge);
+  bindSlider('propSlider', 'propNum', 10000, 2000000,  updateLTVBadge);
+
+  g('termSlider').addEventListener('input', function() {
+    g('termNum').value = this.value; updateSliderGradient(this); updateTermDisplay();
+  });
+  g('termNum').addEventListener('input', function() {
+    var v = parseInt(this.value, 10);
+    if (isFinite(v)) { g('termSlider').value = Math.max(4, Math.min(30, v)); updateSliderGradient(g('termSlider')); }
+    updateTermDisplay();
+  });
+  g('termNum').addEventListener('change', function() {
+    var v = parseInt(this.value, 10);
+    if (isNaN(v) || v < 4) this.value = '4'; else if (v > 30) this.value = '30';
+    g('termSlider').value = this.value; updateSliderGradient(g('termSlider')); updateTermDisplay();
+  });
+
+  g('fixation').addEventListener('change', updateRate);
+  g('disc1').addEventListener('change', updateRate);
+  g('disc2').addEventListener('change', updateRate);
+  g('marital').addEventListener('change', updateCoBorrower);
+  g('addCo').addEventListener('change', function() {
+    if (this.checked) g('coBlock').classList.add('show');
+    else              g('coBlock').classList.remove('show');
+  });
+
+  g('btnCalc').addEventListener('click',  calculate);
+  g('btnReset').addEventListener('click', resetForm);
+  g('btnPrint').addEventListener('click', printReport);
+
+  // Info "i" – hover (desktop) + klik (mobil)
+  var infoBtn  = g('infoBtn');
+  var tipPanel = g('tipPanel');
+  var tipWrap  = g('tipWrap');
+
+  tipWrap.addEventListener('mouseenter', function() {
+    if (tipPanel.classList.contains('has-tips')) tipPanel.classList.add('show');
+  });
+  tipWrap.addEventListener('mouseleave', function() {
+    tipPanel.classList.remove('show');
+  });
+  infoBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (tipPanel.classList.contains('has-tips')) tipPanel.classList.toggle('show');
+  });
+  document.addEventListener('click', function(e) {
+    if (!tipWrap.contains(e.target)) tipPanel.classList.remove('show');
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>
